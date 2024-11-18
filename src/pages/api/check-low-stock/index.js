@@ -1,6 +1,14 @@
 import { checkLowStockAndSendAlerts } from "@/utils/stockCheckUtil.js";
+import {
+  createRateLimiter,
+  applyMiddleware,
+  handleRateLimitError,
+} from "@/utils/rateLimiter";
 
-export default async function handler(req, res) {
+// Create a rate limiter for this specific endpoint
+const limiter = createRateLimiter();
+
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method not allowed",
@@ -9,6 +17,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Apply rate limiting
+    await applyMiddleware(limiter)(req, res);
+
     const result = await checkLowStockAndSendAlerts();
 
     return res.status(200).json({
@@ -19,11 +30,18 @@ export default async function handler(req, res) {
       ...result,
     });
   } catch (error) {
-    console.error("Stock check API error:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to complete stock check",
-      details: error.message,
-    });
+    try {
+      // Handle rate limit errors
+      return handleRateLimitError(error, res);
+    } catch (nonRateLimitError) {
+      console.error("Stock check API error:", nonRateLimitError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to complete stock check",
+        details: nonRateLimitError.message,
+      });
+    }
   }
 }
+
+export default handler;
