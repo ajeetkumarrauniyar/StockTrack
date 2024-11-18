@@ -234,6 +234,8 @@ export function TransactionForm({ type }) {
 
       if (type === "sale") {
         await dispatch(addSale(transaction)).unwrap();
+        // Trigger stock check after each sale
+        await fetch("/api/check-low-stock", { method: "POST" });
       } else {
         await dispatch(addPurchase(transaction)).unwrap();
       }
