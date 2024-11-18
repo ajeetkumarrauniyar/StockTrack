@@ -19,6 +19,10 @@ const ProductSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
+  minimumStockThreshold: {
+    type: Number,
+    default: 12, // Default threshold
+  },
 });
 
 export default mongoose.models.Product ||

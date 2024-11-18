@@ -18,6 +18,7 @@ export function AddProductForm() {
   const [rate, setRate] = useState("");
   const [mrp, setMrp] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
+  const [minimumStockThreshold, setMinimumStockThreshold] = useState("12");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -29,6 +30,9 @@ export function AddProductForm() {
     if (!mrp || parseFloat(mrp) <= 0) errors.mrp = "Valid MRP is required";
     if (stockQuantity && parseInt(stockQuantity) < 0)
       errors.stockQuantity = "Stock quantity cannot be negative";
+    if (!minimumStockThreshold || parseInt(minimumStockThreshold) < 0)
+      errors.minStockThreshold =
+        "Minimum stock threshold must be a non-negative number";
     return errors;
   };
 
@@ -55,6 +59,9 @@ export function AddProductForm() {
           mrp: parseFloat(mrp),
           rate: parseFloat(rate),
           stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
+          minimumStockThreshold: minimumStockThreshold
+            ? parseInt(minimumStockThreshold)
+            : 12,
         })
       ).unwrap();
 
@@ -65,6 +72,7 @@ export function AddProductForm() {
       setMrp("");
       setRate("");
       setStockQuantity("");
+      setMinimumStockThreshold("12");
     } catch (err) {
       setError("Failed to add product. Please try again.");
       if (err.response?.data?.details) {
@@ -125,8 +133,8 @@ export function AddProductForm() {
         </div>
       </div>
 
-      {/* MRP, Rate, and Stock Quantity */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* MRP, Rate, Stock Quantity, Minimum Stock Threshold */}
+      <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label
             htmlFor="mrp"
@@ -184,6 +192,30 @@ export function AddProductForm() {
           {fieldErrors.stockQuantity && (
             <p className="text-sm text-destructive">
               {fieldErrors.stockQuantity}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label
+            htmlFor="minimumStockThreshold"
+            className={
+              fieldErrors.minimumStockThreshold ? "text-destructive" : ""
+            }
+          >
+            Minimum Stock Threshold
+          </Label>
+          <Input
+            id="minimumStockThreshold"
+            type="number"
+            value={minimumStockThreshold}
+            onChange={(e) => setMinimumStockThreshold(e.target.value)}
+            className={
+              fieldErrors.minimumStockThreshold ? "border-destructive" : ""
+            }
+          />
+          {fieldErrors.minimumStockThreshold && (
+            <p className="text-sm text-destructive">
+              {fieldErrors.minimumStockThreshold}
             </p>
           )}
         </div>
