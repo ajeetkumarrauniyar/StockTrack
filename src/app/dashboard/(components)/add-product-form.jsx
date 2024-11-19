@@ -26,7 +26,7 @@ export function AddProductForm() {
   const validateForm = () => {
     const errors = {};
     if (!name.trim()) errors.name = "Product name is required";
-    if (!rate || parseFloat(rate) <= 0) errors.rate = "Valid rate is required";
+    if (rate || parseFloat(rate) <= 0) errors.rate = "Valid rate is required";
     if (!mrp || parseFloat(mrp) <= 0) errors.mrp = "Valid MRP is required";
     if (stockQuantity && parseInt(stockQuantity) < 0)
       errors.stockQuantity = "Stock quantity cannot be negative";
@@ -57,7 +57,7 @@ export function AddProductForm() {
           description,
           packaging,
           mrp: parseFloat(mrp),
-          rate: parseFloat(rate),
+          rate: rate ? parseFloat(rate) : 0,
           stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
           minimumStockThreshold: minimumStockThreshold
             ? parseInt(minimumStockThreshold)
@@ -160,7 +160,7 @@ export function AddProductForm() {
             htmlFor="rate"
             className={fieldErrors.rate ? "text-destructive" : ""}
           >
-            Rate
+            Sell Rate (Optional)
           </Label>
           <Input
             id="rate"
@@ -180,7 +180,7 @@ export function AddProductForm() {
             htmlFor="stockQuantity"
             className={fieldErrors.stockQuantity ? "text-destructive" : ""}
           >
-            Stock Quantity
+            Opening Stock
           </Label>
           <Input
             id="stockQuantity"

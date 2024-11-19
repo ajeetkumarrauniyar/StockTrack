@@ -11,44 +11,54 @@ export default async function handler(req, res) {
       try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
+        const productId = req.query.productId;
+
         const skip = (page - 1) * limit;
 
-        // Fetch purchases and sales
-        const purchases = await Purchase.find({}).sort({ date: 1 });
-        const sales = await Sale.find({}).sort({ date: 1 });
+
+        if (!productId) {
+          return res.status(400).json({
+            success: false,
+            error: "Product ID is required",
+          });
+        }
+
+        // Fetch purchases and sales for the specific product
+        const purchases = await Purchase.find({
+          "products.product": productId,
+        }).sort({ date: 1 });
+        const sales = await Sale.find({ "products.product": productId }).sort({
+          date: 1,
+        });
 
         // Combine and sort transactions
         const allTransactions = [...purchases, ...sales].sort(
           (a, b) => a.date - b.date
         );
 
-        // Calculate running balance for each product
-        const productBalances = {};
-        const inventoryTransactions = allTransactions.flatMap((transaction) => {
-          return transaction.products.map((item) => {
-            const productId = item.product.toString();
-            if (!productBalances[productId]) {
-              productBalances[productId] = 0;
-            }
+        // Calculate running balance for the specific product
+        let balance = 0;
 
-            const quantity =
-              transaction.constructor.modelName === "Purchase"
-                ? item.quantity
-                : -item.quantity;
-            productBalances[productId] += quantity;
+        const inventoryTransactions = allTransactions.map((transaction) => {
+          const productItem = transaction.products.find(
+            (item) => item.product.toString() === productId
+          );
 
-            return {
-              _id: `${transaction._id}-${item.product}`,
-              date: transaction.date,
-              invoiceNumber: transaction.invoiceNumber,
-              partyName: transaction.partyName,
-              productId: item.product,
-              productName: item.productName,
-              type: transaction.constructor.modelName.toLowerCase(),
-              quantity: item.quantity,
-              balance: productBalances[productId],
-            };
-          });
+          const quantity =
+            transaction.constructor.modelName === "Purchase"
+              ? productItem.quantity
+              : -productItem.quantity;
+          balance += quantity;
+
+          return {
+            _id: `${transaction._id}-${productId}`,
+            date: transaction.date,
+            invoiceNumber: transaction.invoiceNumber,
+            partyName: transaction.partyName,
+            type: transaction.constructor.modelName.toLowerCase(),
+            quantity: productItem.quantity,
+            balance: balance,
+          };
         });
 
         // Apply pagination
@@ -77,6 +87,6 @@ export default async function handler(req, res) {
 
     default:
       res.status(405).json({ success: false, error: "Method not allowed" });
-      break;
+      break; // const inventoryTransactions = allTransactions.flatMap((transaction) => {
   }
 }

@@ -2,8 +2,8 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 export const fetchInventoryTransactions = createAsyncThunk(
   "inventory/fetchTransactions",
-  async ({ page, limit }) => {
-    const response = await fetch(`/api/inventory?page=${page}&limit=${limit}`);
+  async ({ page, limit, productId }) => {
+    const response = await fetch(`/api/inventory?page=${page}&limit=${limit}&productId=${productId}`);
     if (!response.ok) {
       throw new Error("Failed to fetch inventory transactions");
     }

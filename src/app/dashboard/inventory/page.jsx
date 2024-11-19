@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   Select,
@@ -23,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader } from "@/components/loader";
 
 export default function InventoryPage() {
   const dispatch = useDispatch();
@@ -40,6 +40,8 @@ export default function InventoryPage() {
 
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState("");
+  console.log("Selected", selectedProduct); // OK
+
   const limit = 20;
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function InventoryPage() {
       dispatch(
         fetchInventoryTransactions({ page, limit, productId: selectedProduct })
       );
-    }
+    }    
   }, [dispatch, page, limit, selectedProduct]);
 
   const handlePrevPage = () => {
@@ -70,7 +72,7 @@ export default function InventoryPage() {
   if (productsStatus === "loading" || inventoryStatus === "loading") {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader />
       </div>
     );
   }
