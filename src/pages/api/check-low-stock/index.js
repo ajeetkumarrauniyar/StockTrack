@@ -4,7 +4,7 @@ import {
   applyMiddleware,
   handleRateLimitError,
 } from "@/utils/rateLimiter";
-import "../tasks/dailyStockCheck.js";
+import "@/tasks/dailyStockCheck.js";
 
 // Create a rate limiter for this specific endpoint
 const limiter = createRateLimiter();
