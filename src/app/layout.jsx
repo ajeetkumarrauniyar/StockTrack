@@ -4,7 +4,6 @@ import { Provider } from "react-redux";
 import { store } from "../store";
 import { ClerkProvider } from "@clerk/nextjs";
 import "../globals.css";
-import './tasks/dailyStockCheck.js';
 
 export default function RootLayout({ children }) {
   return (
