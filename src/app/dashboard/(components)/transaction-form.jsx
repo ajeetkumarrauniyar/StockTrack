@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addSale } from "@/store/salesSlice";
 import { addPurchase } from "@/store/purchasesSlice";
@@ -33,6 +33,14 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function TransactionForm({ type }) {
   const dispatch = useDispatch();
@@ -46,13 +54,10 @@ export function TransactionForm({ type }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showSkippedNumberDialog, setShowSkippedNumberDialog] = useState(false);
+  const [skippedNumberInfo, setSkippedNumberInfo] = useState(null);
 
-  useEffect(() => {
-    dispatch(fetchProducts({ page: 1, limit: 100 }));
-    generateInvoiceNumber();
-  }, [dispatch, type]);
-
-  const generateInvoiceNumber = async () => {
+  const generateInvoiceNumber = useCallback(async () => {
     try {
       const response = await fetch(`/api/${type}s/generate-invoice-number`);
       if (!response.ok) {
@@ -60,10 +65,33 @@ export function TransactionForm({ type }) {
       }
       const data = await response.json();
       setInvoiceNumber(data.invoiceNumber);
+      if (data.hasSkippedNumbers) {
+        setSkippedNumberInfo({
+          suggestedNumber: data.invoiceNumber,
+          lastUsedNumber: data.lastUsedNumber,
+        });
+        setShowSkippedNumberDialog(true);
+      }
     } catch (error) {
       console.error(`Error generating ${type} invoice number:`, error);
       setError(
         "Failed to generate invoice number. Please refresh the page or contact support."
+      );
+    }
+  }, [type]);
+
+  useEffect(() => {
+    dispatch(fetchProducts({ page: 1, limit: 100 }));
+    generateInvoiceNumber();
+  }, [dispatch, type, generateInvoiceNumber]);
+
+  const handleSkippedNumberDialogClose = (useSkippedNumber) => {
+    setShowSkippedNumberDialog(false);
+    if (!useSkippedNumber) {
+      setInvoiceNumber(
+        skippedNumberInfo.lastUsedNumber.replace(/PUR-(\d+)/, (_, p1) => {
+          return `PUR-${(parseInt(p1) + 1).toString().padStart(6, "0")}`;
+        })
       );
     }
   };
@@ -242,10 +270,11 @@ export function TransactionForm({ type }) {
       setPartyName("");
       setBillDate(new Date());
       setTransactionItems([{ product: "", quantity: 1, rate: 0, amount: 0 }]);
-      generateInvoiceNumber();
+
+      // Generate new invoice number after successful submission
+      await generateInvoiceNumber();
     } catch (err) {
       const errorInfo = parseErrorResponse(err);
-      // setError(`Failed to add ${type}. Please try again.`);
       setError(errorInfo.message);
       if (errorInfo.details) {
         setFieldErrors(errorInfo.details);
@@ -258,244 +287,286 @@ export function TransactionForm({ type }) {
   const totals = calculateTotals();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label
-            htmlFor="invoiceNumber"
-            className={fieldErrors.invoiceNumber ? "text-destructive" : ""}
-          >
-            Invoice Number
-          </Label>
-          <Input
-            id="invoiceNumber"
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-            readOnly={type === "sale"}
-            required
-            className={fieldErrors.invoiceNumber ? "border-destructive" : ""}
-          />
-          {fieldErrors.invoiceNumber && (
-            <p className="text-sm text-destructive">
-              {fieldErrors.invoiceNumber}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label
-            htmlFor="partyName"
-            className={fieldErrors.partyName ? "text-destructive" : ""}
-          >
-            Party Name
-          </Label>
-          <Input
-            id="partyName"
-            value={partyName}
-            onChange={(e) => setPartyName(e.target.value)}
-            required
-            className={fieldErrors.partyName ? "border-destructive" : ""}
-          />
-          {fieldErrors.partyName && (
-            <p className="text-sm text-destructive">{fieldErrors.partyName}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label
-            htmlFor="billDate"
-            className={fieldErrors.billDate ? "text-destructive" : ""}
-          >
-            Bill Date
-          </Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !billDate && "text-muted-foreground",
-                  fieldErrors.billDate && "border-destructive"
-                )}
-              >
-                {billDate ? format(billDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={billDate}
-                onSelect={setBillDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          {fieldErrors.billDate && (
-            <p className="text-sm text-destructive">{fieldErrors.billDate}</p>
-          )}
-        </div>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product</TableHead>
-            <TableHead>MRP</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Net Rate</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactionItems.map((item, index) => (
-            <TableRow
-              key={index}
-              className={fieldErrors.items?.[index] ? "bg-destructive/5" : ""}
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="invoiceNumber"
+              className={fieldErrors.invoiceNumber ? "text-destructive" : ""}
             >
-              {/* Select a Product */}
-              <TableCell>
-                <Select
-                  value={item.product}
-                  onValueChange={(value) => handleProductChange(index, value)}
+              Invoice Number
+            </Label>
+            <Input
+              id="invoiceNumber"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              readOnly={type === "sale"}
+              required
+              className={fieldErrors.invoiceNumber ? "border-destructive" : ""}
+            />
+            {fieldErrors.invoiceNumber && (
+              <p className="text-sm text-destructive">
+                {fieldErrors.invoiceNumber}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="partyName"
+              className={fieldErrors.partyName ? "text-destructive" : ""}
+            >
+              Party Name
+            </Label>
+            <Input
+              id="partyName"
+              value={partyName}
+              onChange={(e) => setPartyName(e.target.value)}
+              required
+              className={fieldErrors.partyName ? "border-destructive" : ""}
+            />
+            {fieldErrors.partyName && (
+              <p className="text-sm text-destructive">
+                {fieldErrors.partyName}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="billDate"
+              className={fieldErrors.billDate ? "text-destructive" : ""}
+            >
+              Bill Date
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !billDate && "text-muted-foreground",
+                    fieldErrors.billDate && "border-destructive"
+                  )}
                 >
-                  <SelectTrigger
-                    className={
-                      fieldErrors.items?.[index]?.product
-                        ? "border-destructive"
-                        : ""
-                    }
+                  {billDate ? (
+                    format(billDate, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={billDate}
+                  onSelect={setBillDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {fieldErrors.billDate && (
+              <p className="text-sm text-destructive">{fieldErrors.billDate}</p>
+            )}
+          </div>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product</TableHead>
+              <TableHead>MRP</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Net Rate</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transactionItems.map((item, index) => (
+              <TableRow
+                key={index}
+                className={fieldErrors.items?.[index] ? "bg-destructive/5" : ""}
+              >
+                {/* Select a Product */}
+                <TableCell>
+                  <Select
+                    value={item.product}
+                    onValueChange={(value) => handleProductChange(index, value)}
                   >
-                    <SelectValue placeholder="Select a product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product._id} value={product._id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldErrors.items?.[index]?.product && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.items[index].product}
-                  </p>
-                )}
-              </TableCell>
-              {/* MRP */}
-              <TableCell>
-                {type === "purchase" ? (
-                  <div>
-                    <Input
-                      type="number"
-                      value={item.mrp}
-                      onChange={(e) => handleMRPChange(index, e.target.value)}
-                      min="0"
-                      step="0.01"
+                    <SelectTrigger
                       className={
-                        fieldErrors.items?.[index]?.mrp
+                        fieldErrors.items?.[index]?.product
                           ? "border-destructive"
                           : ""
                       }
-                    />
-                    {fieldErrors.items?.[index]?.mrp && (
-                      <p className="text-sm text-destructive mt-1">
-                        {fieldErrors.items[index].mrp}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  (item.mrp || 0).toFixed(2)
-                )}
-              </TableCell>
-              {/* Quantity */}
-              <TableCell>
-                <Input
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handleQuantityChange(index, e.target.value)}
-                  min="1"
-                  className={
-                    fieldErrors.items?.[index]?.quantity
-                      ? "border-destructive"
-                      : ""
-                  }
-                />
-                {fieldErrors.items?.[index]?.quantity && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.items[index].quantity}
-                  </p>
-                )}
-              </TableCell>
-              {/* Net Rate */}
-              <TableCell>
-                <Input
-                  type="number"
-                  value={item.rate}
-                  onChange={(e) => handleRateChange(index, e.target.value)}
-                  min="0"
-                  step="0.01"
-                  className={
-                    fieldErrors.items?.[index]?.rate ? "border-destructive" : ""
-                  }
-                />
-                {fieldErrors.items?.[index]?.rate && (
-                  <p className="text-sm text-destructive mt-1">
-                    {fieldErrors.items[index].rate}
-                  </p>
-                )}
-              </TableCell>
-              {/* Amount */}
-              <TableCell>{(item.amount || 0).toFixed(2)}</TableCell>
-              {/* Action */}
-              <TableCell>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeTransactionItem(index)}
-                  className="text-muted-foreground"
-                  aria-label="Remove item"
-                  title="Remove item"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                {/* //TODO: Add a Edit option */}
-              </TableCell>
+                    >
+                      <SelectValue placeholder="Select a product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((product) => (
+                        <SelectItem key={product._id} value={product._id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.items?.[index]?.product && (
+                    <p className="text-sm text-destructive mt-1">
+                      {fieldErrors.items[index].product}
+                    </p>
+                  )}
+                </TableCell>
+                {/* MRP */}
+                <TableCell>
+                  {type === "purchase" ? (
+                    <div>
+                      <Input
+                        type="number"
+                        value={item.mrp}
+                        onChange={(e) => handleMRPChange(index, e.target.value)}
+                        min="0"
+                        step="0.01"
+                        className={
+                          fieldErrors.items?.[index]?.mrp
+                            ? "border-destructive"
+                            : ""
+                        }
+                      />
+                      {fieldErrors.items?.[index]?.mrp && (
+                        <p className="text-sm text-destructive mt-1">
+                          {fieldErrors.items[index].mrp}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    (item.mrp || 0).toFixed(2)
+                  )}
+                </TableCell>
+                {/* Quantity */}
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(index, e.target.value)
+                    }
+                    min="1"
+                    className={
+                      fieldErrors.items?.[index]?.quantity
+                        ? "border-destructive"
+                        : ""
+                    }
+                  />
+                  {fieldErrors.items?.[index]?.quantity && (
+                    <p className="text-sm text-destructive mt-1">
+                      {fieldErrors.items[index].quantity}
+                    </p>
+                  )}
+                </TableCell>
+                {/* Net Rate */}
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={item.rate}
+                    onChange={(e) => handleRateChange(index, e.target.value)}
+                    min="0"
+                    step="0.01"
+                    className={
+                      fieldErrors.items?.[index]?.rate
+                        ? "border-destructive"
+                        : ""
+                    }
+                  />
+                  {fieldErrors.items?.[index]?.rate && (
+                    <p className="text-sm text-destructive mt-1">
+                      {fieldErrors.items[index].rate}
+                    </p>
+                  )}
+                </TableCell>
+                {/* Amount */}
+                <TableCell>{(item.amount || 0).toFixed(2)}</TableCell>
+                {/* Action */}
+                <TableCell>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeTransactionItem(index)}
+                    className="text-muted-foreground"
+                    aria-label="Remove item"
+                    title="Remove item"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  {/* //TODO: Add a Edit option */}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="font-extrabold">Total</TableHead>
+              <TableHead className="font-extrabold">
+                {totals.quantity}
+              </TableHead>
+              <TableHead></TableHead>
+              <TableHead></TableHead>
+              <TableHead className="font-extrabold">
+                {totals.amount.toFixed(2)}
+              </TableHead>
+              <TableHead></TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="font-extrabold">Total</TableHead>
-            <TableHead className="font-extrabold">{totals.quantity}</TableHead>
-            <TableHead></TableHead>
-            <TableHead></TableHead>
-            <TableHead className="font-extrabold">
-              {totals.amount.toFixed(2)}
-            </TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-      </Table>
-      <div className="flex justify-between items-center mt-4">
-        <Button type="button" onClick={addTransactionItem} variant="outline">
-          <Plus className="mr-2 h-4 w-4" /> Add Product
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            `Submit ${type.charAt(0).toUpperCase() + type.slice(1)}`
-          )}
-        </Button>
-      </div>
-    </form>
+          </TableHeader>
+        </Table>
+        <div className="flex justify-between items-center mt-4">
+          <Button type="button" onClick={addTransactionItem} variant="outline">
+            <Plus className="mr-2 h-4 w-4" /> Add Product
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              `Submit ${type.charAt(0).toUpperCase() + type.slice(1)}`
+            )}
+          </Button>
+        </div>
+      </form>
+
+      <Dialog
+        open={showSkippedNumberDialog}
+        onOpenChange={setShowSkippedNumberDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Skipped Invoice Number Detected</DialogTitle>
+            <DialogDescription>
+              We&lsquo;ve detected a gap in the invoice numbering sequence. The
+              last used number was {skippedNumberInfo?.lastUsedNumber}, and the
+              suggested next number to fill the gap is
+              {skippedNumberInfo?.suggestedNumber}.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => handleSkippedNumberDialogClose(false)}
+            >
+              Use Next Sequential Number
+            </Button>
+            <Button onClick={() => handleSkippedNumberDialogClose(true)}>
+              Use Suggested Number
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -12,18 +12,40 @@ export default async function handler(req, res) {
     // Find the latest purchase and get its invoice number
     const latestPurchase = await Purchase.findOne().sort({ invoiceNumber: -1 });
     let nextInvoiceNumber;
+    let hasSkippedNumbers = false;
+    let lastUsedNumber;
 
     if (latestPurchase) {
-      // Check if the latest invoice number follows the PUR-XXXXXX format
+      // Extract the number from the latest invoice number
       const match = latestPurchase.invoiceNumber.match(/^PUR-(\d+)$/);
       if (match) {
-        // If it matches, increment the number
-        const latestNumber = parseInt(match[1]);
-        nextInvoiceNumber = `PUR-${(latestNumber + 1)
+        lastUsedNumber = parseInt(match[1]);
+        const expectedNextNumber = lastUsedNumber + 1;
+        nextInvoiceNumber = `PUR-${expectedNextNumber
           .toString()
           .padStart(6, "0")}`;
+
+        // Find all existing invoice numbers
+        const existingPurchases = await Purchase.find({
+          invoiceNumber: { $regex: /^PUR-\d+$/ },
+        }).select("invoiceNumber");
+
+        const existingNumbers = existingPurchases
+          .map((p) => parseInt(p.invoiceNumber.match(/PUR-(\d+)/)[1]))
+          .sort((a, b) => a - b);
+
+        // Check for any gaps in the sequence
+        for (let i = 0; i < existingNumbers.length - 1; i++) {
+          if (existingNumbers[i + 1] - existingNumbers[i] > 1) {
+            hasSkippedNumbers = true;
+            nextInvoiceNumber = `PUR-${(existingNumbers[i] + 1)
+              .toString()
+              .padStart(6, "0")}`;
+            break;
+          }
+        }
       } else {
-        // If it doesn't match, start a new sequence
+        // If the format is incorrect, start a new sequence
         nextInvoiceNumber = "PUR-000001";
       }
     } else {
@@ -31,8 +53,14 @@ export default async function handler(req, res) {
       nextInvoiceNumber = "PUR-000001";
     }
 
-    res.status(200).json({ success: true, invoiceNumber: nextInvoiceNumber });
-    ˇ;
+    res.status(200).json({
+      success: true,
+      invoiceNumber: nextInvoiceNumber,
+      hasSkippedNumbers,
+      lastUsedNumber: lastUsedNumber
+        ? `PUR-${lastUsedNumber.toString().padStart(6, "0")}`
+        : null,
+    });
   } catch (error) {
     console.error("Error generating invoice number:", error);
     res
