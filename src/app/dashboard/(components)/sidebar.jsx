@@ -40,6 +40,11 @@ export function Sidebar() {
             icon={BookOpen}
             text="Sales Book"
           />
+          <SidebarItem
+            href="/dashboard/purchase-book"
+            icon={BookOpen}
+            text="Purchase Book"
+          />
         </ul>
       </nav>
     </div>
