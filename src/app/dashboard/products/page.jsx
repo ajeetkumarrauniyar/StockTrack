@@ -71,8 +71,8 @@ export default function ProductsPage() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Net Rate</TableHead>
             <TableHead>MRP</TableHead>
+            <TableHead>Net Sell Rate</TableHead>
             <TableHead>Stock Quantity</TableHead>
           </TableRow>
         </TableHeader>
@@ -81,8 +81,8 @@ export default function ProductsPage() {
             <TableRow key={product._id}>
               <TableCell>{product.name || "N/A"}</TableCell>
               <TableCell>{product.description || "N/A"}</TableCell>
-              <TableCell>{formatCurrency(product.rate)}</TableCell>
               <TableCell>{formatCurrency(product.mrp)}</TableCell>
+              <TableCell>{formatCurrency(product.rate)}</TableCell>
               <TableCell>{product.stockQuantity ?? "N/A"}</TableCell>
             </TableRow>
           ))}

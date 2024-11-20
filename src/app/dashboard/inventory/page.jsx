@@ -40,7 +40,6 @@ export default function InventoryPage() {
 
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState("");
-  console.log("Selected", selectedProduct); // OK
 
   const limit = 20;
 

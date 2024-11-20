@@ -161,12 +161,15 @@ export function TransactionForm({ type }) {
 
   const handleProductChange = (index, productId) => {
     const product = products.find((p) => p._id === productId);
+    if (!product) return; // Exit if product not found
+
     const updatedItems = [...transactionItems];
     updatedItems[index] = {
       ...updatedItems[index],
       product: productId,
-      rate: product.rate,
+      rate: type === "sale" ? product.rate : "", // Use sell rate for sales, empty for purchases
       mrp: product.mrp,
+      quantity: updatedItems[index].quantity || 1,
       amount: product.rate * updatedItems[index].quantity,
     };
     setTransactionItems(updatedItems);
@@ -174,20 +177,22 @@ export function TransactionForm({ type }) {
 
   const handleQuantityChange = (index, quantity) => {
     const updatedItems = [...transactionItems];
+    const numericQuantity = Number(quantity) || 0;
     updatedItems[index] = {
       ...updatedItems[index],
-      quantity: Number(quantity),
-      amount: updatedItems[index].rate * Number(quantity),
+      quantity: numericQuantity,
+      amount: updatedItems[index].rate * numericQuantity,
     };
     setTransactionItems(updatedItems);
   };
 
   const handleRateChange = (index, newRate) => {
     const updatedItems = [...transactionItems];
+    const numericRate = Number(newRate) || 0;
     updatedItems[index] = {
       ...updatedItems[index],
-      rate: Number(newRate),
-      amount: Number(newRate) * updatedItems[index].quantity,
+      rate: numericRate,
+      amount: numericRate * updatedItems[index].quantity,
     };
     setTransactionItems(updatedItems);
   };
@@ -381,7 +386,9 @@ export function TransactionForm({ type }) {
               <TableHead>Product</TableHead>
               <TableHead>MRP</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Net Rate</TableHead>
+              <TableHead>
+                {type === "sale" ? "Sell Rate" : "Purchase Rate"}
+              </TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>

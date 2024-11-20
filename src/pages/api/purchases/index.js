@@ -98,6 +98,7 @@ export default async function handler(req, res) {
                         product,
                         quantity,
                         rate,
+                        // purchaseRate: rate, // Store the purchase rate
                         mrp,
                         amount,
                       })
