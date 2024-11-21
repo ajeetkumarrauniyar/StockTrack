@@ -48,6 +48,24 @@ export const updateProductStock = createAsyncThunk(
   }
 );
 
+export const addMultipleProducts = createAsyncThunk(
+  "products/addMultipleProducts",
+  async (products) => {
+    const response = await fetch("/api/products/bulk-product-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ products }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to add multiple products");
+    }
+    const data = await response.json();
+    return data.data;
+  }
+);
+
 const initialState = {
   items: [],
   status: "idle",
@@ -88,6 +106,13 @@ export const productsSlice = createSlice({
         );
         if (index !== -1) {
           state.items[index] = action.payload;
+        }
+      })
+      .addCase(addMultipleProducts.fulfilled, (state, action) => {
+        state.items = [...action.payload, ...state.items];
+        if (state.items.length > 10) {
+          // Assuming 10 items per page
+          state.items = state.items.slice(0, 10);
         }
       });
   },

@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { Pagination } from "@/components/pagination";
+import { BulkProductUpload } from "@/app/dashboard/(components)/bulk-product-upload";
 
 export default function ProductsPage() {
   const dispatch = useDispatch();
@@ -62,6 +62,7 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Add Products</h2>
       <AddProductForm />
+      <BulkProductUpload />
       <Table>
         <TableHeader>
           <TableRow>
