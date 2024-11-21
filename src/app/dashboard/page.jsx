@@ -1,6 +1,7 @@
 "use client";
 
 import { SalesChart } from "./(components)/sales-chart";
+import { PurchaseChart } from "./(components)/purchase-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -249,7 +250,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <SalesChart sales={sales} isLoading={isLoading} error={error} />
+      <SalesChart />
+      <PurchaseChart />
     </div>
   );
 }

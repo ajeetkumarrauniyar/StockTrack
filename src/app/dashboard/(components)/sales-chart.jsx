@@ -1,7 +1,9 @@
 "use client";
 
-// import { useEffect } from "react";
-// import { useDispatch, useSelector } from "react-redux";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   Line,
   LineChart,
@@ -10,27 +12,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-// import { fetchSales } from "@/store/salesSlice";
-import { Loader2 } from "lucide-react";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 export function SalesChart() {
   const { sales, isLoading, error } = useDashboardData();
 
-  // const dispatch = useDispatch();
-  // const sales = useSelector((state) => state.sales.items);
-  // const status = useSelector((state) => state.sales.status);
-  // const error = useSelector((state) => state.sales.error);
-
-  // useEffect(() => {
-  //   if (status === "idle") {
-  //     dispatch(fetchSales({ page: 1, limit: 30 })); // Fetch last 30 days of sales
-  //   }
-  // }, [status, dispatch]);
-
-  // if (status === "loading") {
   if (isLoading) {
     return (
       <Card>
@@ -44,7 +34,6 @@ export function SalesChart() {
     );
   }
 
-  // if (status === "failed") {
   if (error) {
     return (
       <Card>
@@ -61,7 +50,6 @@ export function SalesChart() {
     );
   }
 
-  // Safeguard against undefined sales
   if (!sales || sales.length === 0) {
     return (
       <Card>
@@ -80,9 +68,8 @@ export function SalesChart() {
     );
   }
 
-  // Create a new array instead of mutating the original
   const chartData = [...sales]
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((sale) => ({
       date: new Date(sale.date).toLocaleDateString(),
       amount: sale.totalAmount,
@@ -94,14 +81,52 @@ export function SalesChart() {
         <CardTitle>Sales Overview</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="amount" stroke="#8884d8" />
-          </LineChart>
-        </ResponsiveContainer>
+        <ChartContainer
+          config={{
+            amount: {
+              label: "Amount",
+              color: "hsl(var(--chart-1))",
+            },
+          }}
+          className="h-[300px]"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <XAxis
+                dataKey="date"
+                stroke="hsl(var(--foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="hsl(var(--foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `₹${value}`}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    indicator="line"
+                    nameKey="amount"
+                    hideLabel
+                  />
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="amount"
+                strokeWidth={2}
+                activeDot={{
+                  r: 8,
+                  style: { fill: "hsl(var(--chart-1))", opacity: 0.8 },
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
