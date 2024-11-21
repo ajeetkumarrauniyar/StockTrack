@@ -88,11 +88,6 @@ export async function sendEmail({
     // Send email
     const result = await resend.emails.send(emailData);
 
-    console.log("Email sent successfully:", {
-      id: result.id,
-      to: emailData.to,
-      subject: emailData.subject,
-    });
 
     return {
       success: true,
