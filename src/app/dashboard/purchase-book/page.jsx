@@ -11,11 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Pagination } from "@/components/pagination";
+import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PurchaseBookPage() {
   const dispatch = useDispatch();
@@ -59,37 +60,52 @@ export default function PurchaseBookPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Purchase Book</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Invoice Number</TableHead>
-            <TableHead>Party Name</TableHead>
-            <TableHead>Total Quantity</TableHead>
-            <TableHead>Total Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {purchases.map((purchase) => (
-            <TableRow key={purchase._id}>
-              <TableCell>
-                {format(new Date(purchase.date), "dd/MM/yyyy")}
-              </TableCell>
-              <TableCell>{purchase.invoiceNumber}</TableCell>
-              <TableCell>{purchase.partyName}</TableCell>
-              <TableCell>{purchase.totalQuantity}</TableCell>
-              <TableCell>{formatCurrency(purchase.totalAmount)}</TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Purchase Book</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Invoice Number</TableHead>
+              <TableHead>Party Name</TableHead>
+              <TableHead>Total Quantity</TableHead>
+              <TableHead>Total Amount</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
-    </div>
+          </TableHeader>
+          <TableBody>
+            {purchases.map((purchase) => (
+              <TableRow key={purchase._id}>
+                <TableCell>
+                  {format(new Date(purchase.date), "dd/MM/yyyy")}
+                </TableCell>
+                <TableCell>{purchase.invoiceNumber}</TableCell>
+                <TableCell>{purchase.partyName}</TableCell>
+                <TableCell>{purchase.totalQuantity}</TableCell>
+                <TableCell>{formatCurrency(purchase.totalAmount)}</TableCell>
+                <TableCell>
+                  <InvoiceGenerator
+                    transaction={{
+                      ...purchase,
+                      type: "purchase",
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

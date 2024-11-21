@@ -10,11 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { fetchSales } from "@/store/salesSlice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { Pagination } from "@/components/pagination";
+import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SalesBookPage() {
   const dispatch = useDispatch();
@@ -52,35 +53,52 @@ export default function SalesBookPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Sales Book</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Invoice Number</TableHead>
-            <TableHead>Party Name</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sales.map((sale) => (
-            <TableRow key={sale._id}>
-              <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-              <TableCell>{sale.invoiceNumber}</TableCell>
-              <TableCell>{sale.partyName}</TableCell>
-              <TableCell className="text-right">
-                ₹{sale.totalAmount.toFixed(2)}
-              </TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Sales Book</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Invoice Number</TableHead>
+              <TableHead>Party Name</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
-    </div>
+          </TableHeader>
+          <TableBody>
+            {sales.map((sale) => (
+              <TableRow key={sale._id}>
+                <TableCell>
+                  {new Date(sale.date).toLocaleDateString()}
+                </TableCell>
+                <TableCell>{sale.invoiceNumber}</TableCell>
+                <TableCell>{sale.partyName}</TableCell>
+                <TableCell className="text-right">
+                  ₹{sale.totalAmount.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  <InvoiceGenerator
+                    transaction={{
+                      ...sale,
+                      type: "sale",
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
