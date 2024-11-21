@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader } from "@/components/loader";
+import { Pagination } from "@/components/pagination";
 
 export default function InventoryPage() {
   const dispatch = useDispatch();
@@ -38,34 +39,35 @@ export default function InventoryPage() {
   const productsStatus = useSelector((state) => state.products.status);
   const productsError = useSelector((state) => state.products.error);
 
-  const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState("");
 
   const limit = 20;
 
   useEffect(() => {
-    dispatch(fetchProducts({ page: 1, limit: 100 })); // Fetch all products for the dropdown
-  }, [dispatch]);
+    dispatch(fetchProducts({ page: currentPage, limit }));
+  }, [dispatch, currentPage, limit]);
 
   useEffect(() => {
     if (selectedProduct) {
       dispatch(
-        fetchInventoryTransactions({ page, limit, productId: selectedProduct })
+        fetchInventoryTransactions({
+          page: currentPage,
+          limit,
+          productId: selectedProduct,
+        })
       );
-    }    
-  }, [dispatch, page, limit, selectedProduct]);
+    }
+  }, [dispatch, currentPage, limit, selectedProduct]);
 
-  const handlePrevPage = () => {
-    setPage((prevPage) => Math.max(prevPage - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  const handlePageChange = (page) => {
+    dispatch(
+      fetchInventoryTransactions({ page, limit, productId: selectedProduct })
+    );
   };
 
   const handleProductChange = (productId) => {
     setSelectedProduct(productId);
-    setPage(1); // Reset to first page when changing product
+    dispatch(fetchInventoryTransactions({ page: 1, limit, productId }));
   };
 
   if (productsStatus === "loading" || inventoryStatus === "loading") {
@@ -136,17 +138,11 @@ export default function InventoryPage() {
               ))}
             </TableBody>
           </Table>
-          <div className="flex justify-between items-center">
-            <Button onClick={handlePrevPage} disabled={page === 1}>
-              Previous
-            </Button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button onClick={handleNextPage} disabled={page === totalPages}>
-              Next
-            </Button>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
     </div>

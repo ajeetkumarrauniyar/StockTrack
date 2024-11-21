@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { fetchSales } from "@/store/salesSlice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { Pagination } from "@/components/pagination";
 
 export default function SalesBookPage() {
   const dispatch = useDispatch();
@@ -23,19 +24,14 @@ export default function SalesBookPage() {
   const totalPages = useSelector((state) => state.sales.totalPages);
   const currentPage = useSelector((state) => state.sales.currentPage);
 
-  const [page, setPage] = useState(1);
   const limit = 10;
 
   useEffect(() => {
+    dispatch(fetchSales({ page: currentPage, limit }));
+  }, [dispatch, currentPage, limit]);
+
+  const handlePageChange = (page) => {
     dispatch(fetchSales({ page, limit }));
-  }, [dispatch, page, limit]);
-
-  const handlePrevPage = () => {
-    setPage((prevPage) => Math.max(prevPage - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setPage((prevPage) => Math.min(prevPage + 1, totalPages));
   };
 
   if (status === "loading") {
@@ -80,17 +76,11 @@ export default function SalesBookPage() {
           ))}
         </TableBody>
       </Table>
-      <div className="flex justify-between items-center">
-        <Button onClick={handlePrevPage} disabled={page === 1}>
-          Previous
-        </Button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button onClick={handleNextPage} disabled={page === totalPages}>
-          Next
-        </Button>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

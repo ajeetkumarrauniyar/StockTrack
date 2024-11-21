@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { Pagination } from "@/components/pagination";
 
 export default function PurchaseBookPage() {
   const dispatch = useDispatch();
@@ -24,19 +25,14 @@ export default function PurchaseBookPage() {
   const totalPages = useSelector((state) => state.purchases.totalPages);
   const currentPage = useSelector((state) => state.purchases.currentPage);
 
-  const [page, setPage] = useState(1);
   const limit = 10;
 
   useEffect(() => {
+    dispatch(fetchPurchases({ page: currentPage, limit }));
+  }, [dispatch, currentPage, limit]);
+
+  const handlePageChange = (page) => {
     dispatch(fetchPurchases({ page, limit }));
-  }, [dispatch, page, limit]);
-
-  const handlePrevPage = () => {
-    setPage((prevPage) => Math.max(prevPage - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setPage((prevPage) => Math.min(prevPage + 1, totalPages));
   };
 
   // Format currency with error handling
@@ -89,17 +85,11 @@ export default function PurchaseBookPage() {
           ))}
         </TableBody>
       </Table>
-      <div className="flex justify-between items-center">
-        <Button onClick={handlePrevPage} disabled={page === 1}>
-          Previous
-        </Button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button onClick={handleNextPage} disabled={page === totalPages}>
-          Next
-        </Button>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }
