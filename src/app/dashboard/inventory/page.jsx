@@ -65,25 +65,39 @@ export default function InventoryPage() {
     if (!product) return [];
 
     const openingStock = product.openingStock || 0;
+
+    // Initialize running balance with opening stock
     let runningBalance = openingStock;
 
     // Sort transactions by date in descending order
-    const sortedTransactions = [...inventoryTransactions].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
-    );
+    const sortedTransactions = [...inventoryTransactions].sort((a, b) => {
+      return new Date(a.date) - new Date(b.date);
+    });
+
+    // Hold transactions with balance
+    const transactionsWithBalance = [];
 
     // Calculate running balance for all transactions
-    const transactionsWithBalance = sortedTransactions.map((transaction) => {
-      const quantity =
+    sortedTransactions.forEach((transaction) => {
+      // Calculate quantity change based on transaction type
+      const quantityChange =
         transaction.type === "purchase"
           ? transaction.quantity
           : -transaction.quantity;
-      runningBalance += quantity;
 
-      return {
+      // Update running balance
+      runningBalance += quantityChange;
+
+      // Ensure balance does not go negative
+      // if (runningBalance < 0) {
+      //   runningBalance = 0; // Set to zero if negative
+      // }
+
+      // Push the transaction with the updated balance
+      transactionsWithBalance.push({
         ...transaction,
         balance: runningBalance,
-      };
+      });
     });
 
     // Add opening balance row
@@ -97,7 +111,8 @@ export default function InventoryPage() {
       balance: openingStock,
     };
 
-    return [...transactionsWithBalance, openingBalanceRow]; // Combine opening balance with transactions
+    // Combine transactions with opening balance at the beginning
+    return [openingBalanceRow, ...transactionsWithBalance];
   }, [inventoryTransactions, selectedProduct, products]);
 
   const handlePageChange = (page) => {
