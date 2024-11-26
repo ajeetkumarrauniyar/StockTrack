@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "@/store/productsSlice";
 import { AddProductForm } from "@/app/dashboard/(components)/add-product-form";
@@ -68,19 +68,32 @@ export default function ProductsPage() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead>Packaging</TableHead>
             <TableHead>MRP</TableHead>
             <TableHead>Net Sell Rate</TableHead>
+            <TableHead>Opening Stock</TableHead> 
             <TableHead>Stock Quantity</TableHead>
+            <TableHead>Minimum Stock Threshold</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.map((product) => (
-            <TableRow key={product._id}>
+            <TableRow
+              key={product._id}
+              className={
+                product.stockQuantity < product.minimumStockThreshold
+                  ? "bg-red-50"
+                  : ""
+              }
+            >
               <TableCell>{product.name || "N/A"}</TableCell>
               <TableCell>{product.description || "N/A"}</TableCell>
+              <TableCell>{product.packaging || "N/A"}</TableCell>
               <TableCell>{formatCurrency(product.mrp)}</TableCell>
               <TableCell>{formatCurrency(product.rate)}</TableCell>
+              <TableCell>{product.openingStock || "N/A"}</TableCell>
               <TableCell>{product.stockQuantity ?? "N/A"}</TableCell>
+              <TableCell>{product.minimumStockThreshold ?? "N/A"}</TableCell>
             </TableRow>
           ))}
         </TableBody>

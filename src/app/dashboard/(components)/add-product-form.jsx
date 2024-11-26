@@ -17,7 +17,7 @@ export function AddProductForm() {
   const [packaging, setPackaging] = useState("");
   const [rate, setRate] = useState("");
   const [mrp, setMrp] = useState("");
-  const [stockQuantity, setStockQuantity] = useState("");
+  const [openingStock, setOpeningStock] = useState("");
   const [minimumStockThreshold, setMinimumStockThreshold] = useState("12");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -30,10 +30,10 @@ export function AddProductForm() {
     if (!rate.trim() || parseFloat(rate) <= 0)
       errors.rate = "Valid rate is required";
     if (!mrp || parseFloat(mrp) <= 0) errors.mrp = "Valid MRP is required";
-    if (stockQuantity && parseInt(stockQuantity) < 0)
-      errors.stockQuantity = "Stock quantity cannot be negative";
+    if (openingStock && parseInt(openingStock) < 0)
+      errors.openingStock = "Opening Stock quantity cannot be negative";
     if (!minimumStockThreshold || parseInt(minimumStockThreshold) < 0)
-      errors.minStockThreshold =
+      errors.minimumStockThreshold =
         "Minimum stock threshold must be a non-negative number";
     return errors;
   };
@@ -53,6 +53,8 @@ export function AddProductForm() {
     }
 
     try {
+      const initialStock = openingStock ? parseInt(openingStock) : 0;
+
       await dispatch(
         addProduct({
           name,
@@ -60,7 +62,8 @@ export function AddProductForm() {
           packaging,
           mrp: parseFloat(mrp),
           rate: rate ? parseFloat(rate) : 0,
-          stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
+          openingStock: initialStock, // Set opening stock
+          stockQuantity: initialStock, // Initialize current stock to opening stock
           minimumStockThreshold: minimumStockThreshold
             ? parseInt(minimumStockThreshold)
             : 12,
@@ -73,7 +76,7 @@ export function AddProductForm() {
       setPackaging("");
       setMrp("");
       setRate("");
-      setStockQuantity("");
+      setOpeningStock("");
       setMinimumStockThreshold("12");
     } catch (err) {
       setError("Failed to add product. Please try again.");
@@ -179,21 +182,21 @@ export function AddProductForm() {
         </div>
         <div className="space-y-2">
           <Label
-            htmlFor="stockQuantity"
+            htmlFor="openingStock"
             className={fieldErrors.stockQuantity ? "text-destructive" : ""}
           >
             Opening Stock
           </Label>
           <Input
-            id="stockQuantity"
+            htmlFor="openingStock"
             type="number"
-            value={stockQuantity}
-            onChange={(e) => setStockQuantity(e.target.value)}
-            className={fieldErrors.stockQuantity ? "border-destructive" : ""}
+            value={openingStock}
+            onChange={(e) => setOpeningStock(e.target.value)}
+            className={fieldErrors.openingStock ? "border-destructive" : ""}
           />
-          {fieldErrors.stockQuantity && (
+          {fieldErrors.openingStock && (
             <p className="text-sm text-destructive">
-              {fieldErrors.stockQuantity}
+              {fieldErrors.openingStock}
             </p>
           )}
         </div>

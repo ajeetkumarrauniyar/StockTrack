@@ -2,13 +2,44 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 export const fetchInventoryTransactions = createAsyncThunk(
   "inventory/fetchTransactions",
-  async ({ page, limit, productId }) => {
-    const response = await fetch(`/api/inventory?page=${page}&limit=${limit}&productId=${productId}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch inventory transactions");
+  async ({ page, limit, productId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `/api/inventory?page=${page}&limit=${limit}&productId=${productId}`
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData);
+        // throw new Error("Failed to fetch inventory transactions");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-    const data = await response.json();
-    return data;
+  }
+);
+
+export const addInventoryTransaction = createAsyncThunk(
+  "inventory/addTransaction",
+  async (transaction, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/inventory", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transaction),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData);
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -18,12 +49,26 @@ const initialState = {
   error: null,
   totalPages: 1,
   currentPage: 1,
+  runningBalance: 0,
 };
 
 export const inventorySlice = createSlice({
   name: "inventory",
   initialState,
-  reducers: {},
+  reducers: {
+    calculateRunningBalance: (state, action) => {
+      const { openingStock } = action.payload;
+      let balance = openingStock;
+      state.transactions = state.transactions.map((transaction) => {
+        balance +=
+          transaction.type === "PURCHASE"
+            ? transaction.quantity
+            : -transaction.quantity;
+        return { ...transaction, balance };
+      });
+      state.runningBalance = balance;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchInventoryTransactions.pending, (state) => {
@@ -37,9 +82,17 @@ export const inventorySlice = createSlice({
       })
       .addCase(fetchInventoryTransactions.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.error.message || "Something went wrong";
+        state.error = action.payload?.error || "Failed to fetch transactions";
+      })
+      .addCase(addInventoryTransaction.fulfilled, (state, action) => {
+        state.transactions.unshift(action.payload);
+        if (state.transactions.length > 10) {
+          state.transactions.pop();
+        }
       });
   },
 });
+
+export const { calculateRunningBalance } = inventorySlice.actions;
 
 export default inventorySlice.reducer;

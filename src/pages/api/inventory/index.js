@@ -24,12 +24,8 @@ export default async function handler(req, res) {
         }
 
         // Fetch purchases and sales for the specific product
-        const purchases = await Purchase.find({
-          "products.product": productId,
-        }).sort({ date: 1 });
-        const sales = await Sale.find({ "products.product": productId }).sort({
-          date: 1,
-        });
+        const purchases = await Purchase.find({"products.product": productId,}).sort({ date: 1 });
+        const sales = await Sale.find({ "products.product": productId }).sort({date: 1});
 
         // Combine and sort transactions
         const allTransactions = [...purchases, ...sales].sort(

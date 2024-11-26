@@ -14,37 +14,52 @@ export const fetchProducts = createAsyncThunk(
 
 export const addProduct = createAsyncThunk(
   "products/addProduct",
-  async (product) => {
-    const response = await fetch("/api/products", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(product),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to add product");
+  async (product, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(product),
+      });
+      if (!response.ok) {
+        // throw new Error("Failed to add product");
+        const errorData = await response.json();
+        return rejectWithValue(errorData);
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-    const data = await response.json();
-    return data.data;
   }
 );
 
 export const updateProductStock = createAsyncThunk(
   "products/updateStock",
-  async ({ productId, newStock }) => {
-    const response = await fetch(`/api/products/${productId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ stockQuantity: newStock }),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to update product stock");
+  async ({ productId, stockChange, transactionType }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/products/${productId}/stock`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stockChange,
+          transactionType, // 'PURCHASE', 'SALE', 'ADJUSTMENT'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData);
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-    const data = await response.json();
-    return data.data;
   }
 );
 
@@ -67,7 +82,7 @@ export const addMultipleProducts = createAsyncThunk(
 );
 
 const initialState = {
-  items: [],
+  items: [], // Each item should have both openingStock and stockQuantity
   status: "idle",
   error: null,
   totalPages: 1,
@@ -93,19 +108,35 @@ export const productsSlice = createSlice({
         state.status = "failed";
         state.error = action.error.message || "Something went wrong";
       })
+      .addCase(addProduct.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(addProduct.fulfilled, (state, action) => {
-        state.items.unshift(action.payload);
+        state.status = "succeeded";
+        // Ensure both openingStock and stockQuantity are preserved
+        state.items.unshift({
+          ...action.payload,
+          openingStock: action.payload.openingStock,
+          stockQuantity: action.payload.stockQuantity,
+        });
         if (state.items.length > 10) {
           // Assuming 10 items per page
           state.items.pop();
         }
+      })
+      .addCase(addProduct.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload?.error || "Failed to add product";
       })
       .addCase(updateProductStock.fulfilled, (state, action) => {
         const index = state.items.findIndex(
           (product) => product._id === action.payload._id
         );
         if (index !== -1) {
-          state.items[index] = action.payload;
+          state.items[index] = {
+            ...state.items[index],
+            stockQuantity: action.payload.stockQuantity, // Update only stockQuantity
+          };
         }
       })
       .addCase(addMultipleProducts.fulfilled, (state, action) => {
