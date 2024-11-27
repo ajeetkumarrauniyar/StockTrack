@@ -19,6 +19,7 @@ import { Loader2 } from "lucide-react";
 import { Pagination } from "@/components/pagination";
 import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EditSaleModal } from "@/app/dashboard/(components)/edit-sale-modal";
 
 export default function SalesBookPage() {
   const dispatch = useDispatch();
