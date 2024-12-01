@@ -17,6 +17,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectUserRole } from "@/store/authSlice";
+import { Badge } from "@/components/ui/badge";
 
 export function TopNav() {
   const { user } = useUser();
@@ -61,13 +62,13 @@ export function TopNav() {
         <p className="text-xs leading-none text-muted-foreground flex items-center">
           {userRole === "admin" ? (
             <>
-              <ShieldCheck className="w-3 h-3 mr-1 text-green-500" />
-              Admin
+              <ShieldCheck className="w-6 h-6 mr-1 text-green-500" />
+              <Badge>Admin</Badge>
             </>
           ) : (
             <>
-              <ShieldAlert className="w-3 h-3 mr-1 text-yellow-500" />
-              Viewer
+              <ShieldAlert className="w-6 h-6 mr-1 text-yellow-500" />
+              <Badge>Viewer</Badge>
             </>
           )}
         </p>

@@ -13,7 +13,7 @@ export function Sidebar() {
     <div className="flex flex-col w-64 bg-white border-r">
       <div className="flex items-center justify-center h-16 border-b">
         <Link href="/" className="flex items-center">
-          <span className="text-2xl font-semibold">IMS</span>
+          <span className="text-2xl font-semibold">Stock Track Pro</span>
         </Link>
       </div>
       <nav className="flex-1 overflow-y-auto">
