@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,18 +15,37 @@ import {
 import { useUser, useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
+import { selectUserRole } from "@/store/authSlice";
 
 export function TopNav() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const userRole = useSelector(selectUserRole);
+
+  // Debugging logs
+  // console.log("TopNav - Prop UserRole:", userRole);
+
+  // Use the userRole prop directly, falling back to "viewer" if it's undefined
+  // const role = userRole || "viewer";
+
+  // console.log("TopNav - Computed Role:", role);
 
   const pathname = usePathname();
+
   const [pageTitle, setPageTitle] = useState("Dashboard");
 
   useEffect(() => {
     const path = pathname.split("/").pop() || "dashboard";
-    setPageTitle(path.charAt(0).toUpperCase() + path.slice(1));
+
+    // Capitalize the first letter of each word
+    const capitalizedTitle = path
+      .split(/[-\s]+/) // Split the path into words by hyphens and spaces
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word
+      .join(" "); // Join the words back into a single string
+
+    setPageTitle(capitalizedTitle);
   }, [pathname]);
 
   const handleSignOut = async () => {
@@ -39,9 +58,19 @@ export function TopNav() {
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
       <h1 className="text-2xl font-semibold">{pageTitle}</h1>
       <div className="flex items-center space-x-4">
-        {/* <Button variant="ghost" size="icon">
-          <Bell className="w-5 h-5" />
-        </Button> */}
+        <p className="text-xs leading-none text-muted-foreground flex items-center">
+          {userRole === "admin" ? (
+            <>
+              <ShieldCheck className="w-3 h-3 mr-1 text-green-500" />
+              Admin
+            </>
+          ) : (
+            <>
+              <ShieldAlert className="w-3 h-3 mr-1 text-yellow-500" />
+              Viewer
+            </>
+          )}
+        </p>
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -69,18 +98,20 @@ export function TopNav() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              {/* <DropdownMenuItem asChild>
                 <Link href="/dashboard/profile">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
+              {userRole === "admin" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={(event) => {

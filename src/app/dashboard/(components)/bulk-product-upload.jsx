@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Download } from "lucide-react";
+import { useSelector } from "react-redux";
+import { selectUserRole } from "@/store/authSlice";
 
 export function BulkProductUpload() {
   const dispatch = useDispatch();
@@ -14,6 +16,7 @@ export function BulkProductUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const userRole = useSelector(selectUserRole);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -83,8 +86,16 @@ export function BulkProductUpload() {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
-        <Input type="file" accept=".csv" onChange={handleFileChange} />
-        <Button onClick={handleUpload} disabled={!file || isUploading}>
+        <Input
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          disabled={userRole !== "admin"}
+        />
+        <Button
+          onClick={handleUpload}
+          disabled={!file || isUploading || userRole !== "admin"}
+        >
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

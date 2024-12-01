@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addSale } from "@/store/salesSlice";
 import { addPurchase } from "@/store/purchasesSlice";
 import { fetchProducts } from "@/store/productsSlice";
+import { selectUserRole } from "@/store/authSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,7 @@ export function TransactionForm({ type }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showSkippedNumberDialog, setShowSkippedNumberDialog] = useState(false);
   const [skippedNumberInfo, setSkippedNumberInfo] = useState(null);
+  const userRole = useSelector(selectUserRole);
 
   const generateInvoiceNumber = useCallback(async () => {
     try {
@@ -290,6 +292,18 @@ export function TransactionForm({ type }) {
   };
 
   const totals = calculateTotals();
+
+  if (userRole !== "admin") {
+    return (
+      <Alert>
+        <AlertTitle>Permission Denied</AlertTitle>
+        <AlertDescription>
+          You do not have permission to perform transactions. Please contact an
+          administrator. Your role: <strong>{userRole}</strong>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <>

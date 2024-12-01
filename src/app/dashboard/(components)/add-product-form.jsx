@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { addProduct } from "@/store/productsSlice";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { selectUserRole } from "@/store/authSlice";
 
 export function AddProductForm() {
   const dispatch = useDispatch();
@@ -22,6 +24,7 @@ export function AddProductForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const userRole = useSelector(selectUserRole);
 
   const validateForm = () => {
     const errors = {};
@@ -96,7 +99,6 @@ export function AddProductForm() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
       {/* Product Name */}
       <div className="space-y-2">
         <Label
@@ -116,7 +118,6 @@ export function AddProductForm() {
           <p className="text-sm text-destructive">{fieldErrors.name}</p>
         )}
       </div>
-
       {/* Description and Packaging */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -137,7 +138,6 @@ export function AddProductForm() {
           />
         </div>
       </div>
-
       {/* MRP, Rate, Stock Quantity, Minimum Stock Threshold */}
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
@@ -225,8 +225,11 @@ export function AddProductForm() {
           )}
         </div>
       </div>
-
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button
+        type="submit"
+        disabled={isSubmitting || userRole !== "admin"}
+        className="w-full mt-4"
+      >
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

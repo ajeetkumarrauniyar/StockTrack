@@ -20,6 +20,7 @@ import { Pagination } from "@/components/pagination";
 import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditSaleModal } from "@/app/dashboard/(components)/edit-sale-modal";
+import { selectUserRole } from "@/store/authSlice";
 
 export default function SalesBookPage() {
   const dispatch = useDispatch();
@@ -28,6 +29,7 @@ export default function SalesBookPage() {
   const error = useSelector((state) => state.sales.error);
   const totalPages = useSelector((state) => state.sales.totalPages);
   const currentPage = useSelector((state) => state.sales.currentPage);
+  const userRole = useSelector(selectUserRole);
 
   const [editingSale, setEditingSale] = useState(null);
 
@@ -110,6 +112,7 @@ export default function SalesBookPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditSale(sale)}
+                    disabled={userRole !== "admin"}
                     className="ml-2"
                   >
                     <Edit className="mr-2 h-4 w-4" />
