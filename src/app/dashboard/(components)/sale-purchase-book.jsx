@@ -6,8 +6,10 @@ import { fetchPurchases } from "@/store/purchasesSlice";
 import { selectUserRole } from "@/store/authSlice";
 import { fetchSales } from "@/store/salesSlice";
 import {
+  SortingState,
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -20,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Edit, Loader2 } from "lucide-react";
+import { ArrowUpDown, Edit, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Pagination } from "@/components/pagination";
 import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator";
@@ -49,6 +51,8 @@ export default function SalePurchaseBookComponent({ type }) {
   const userRole = useSelector(selectUserRole);
 
   const [editingSale, setEditingSale] = useState(null);
+
+  const [sorting, setSorting] = useState([]);
 
   const limit = 10;
 
@@ -96,28 +100,85 @@ export default function SalePurchaseBookComponent({ type }) {
   const columns = [
     {
       accessorKey: "date",
-      header: "Date",
+      // header: "Date",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => format(new Date(row.original.date), "dd/MM/yyyy"),
     },
     {
       accessorKey: "invoiceNumber",
-      header: "Invoice Number",
+      // header: "Invoice Number",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Invoice Number
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
     },
     {
       accessorKey: "partyName",
-      header: "Party Name",
+      // header: "Party Name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Party Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
     },
     ...(type === "purchase"
       ? [
           {
             accessorKey: "totalQuantity",
-            header: "Total Quantity",
+            // header: "Total Quantity",
+            header: ({ column }) => {
+              return (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === "asc")
+                  }
+                >
+                  Total Quantity
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              );
+            },
           },
         ]
       : []),
     {
       accessorKey: "totalAmount",
-      header: () => (type === "sale" ? "Amount" : "Total Amount"),
+      // header: () => (type === "sale" ? "Amount" : "Total Amount"),
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {type === "sale" ? "Amount" : "Total Amount"}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ getValue }) => (
         <div className="text-right">{formatCurrency(getValue())}</div>
       ),
@@ -149,6 +210,12 @@ export default function SalePurchaseBookComponent({ type }) {
     data: transactions,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
   });
 
   if (status === "loading") {
