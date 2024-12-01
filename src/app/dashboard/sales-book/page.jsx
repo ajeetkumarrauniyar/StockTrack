@@ -4,7 +4,7 @@ import SalePurchaseBookComponent from "@/app/dashboard/(components)/sale-purchas
 const PurchaseBookPage = () => {
   return (
     <div className="space-y-6">
-      <SalePurchaseBookComponent type="sale" />;
+      <SalePurchaseBookComponent type="sale" />
     </div>
   );
 };
