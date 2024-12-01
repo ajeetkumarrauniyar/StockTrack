@@ -6,10 +6,10 @@ import { fetchPurchases } from "@/store/purchasesSlice";
 import { selectUserRole } from "@/store/authSlice";
 import { fetchSales } from "@/store/salesSlice";
 import {
-  SortingState,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -29,6 +29,7 @@ import { InvoiceGenerator } from "@/app/dashboard/(components)/invoice-generator
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EditSaleModal } from "./edit-sale-modal";
+import { Input } from "@/components/ui/input";
 
 export default function SalePurchaseBookComponent({ type }) {
   const dispatch = useDispatch();
@@ -53,6 +54,7 @@ export default function SalePurchaseBookComponent({ type }) {
   const [editingSale, setEditingSale] = useState(null);
 
   const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
 
   const limit = 10;
 
@@ -213,8 +215,11 @@ export default function SalePurchaseBookComponent({ type }) {
     onSortingChange: setSorting,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
+      columnFilters,
     },
   });
 
@@ -289,6 +294,16 @@ export default function SalePurchaseBookComponent({ type }) {
           </TableBody>
         </Table> */}
         <ScrollArea className="w-full rounded-md border">
+          <div className="flex items-center py-4 px-4 space-between border-b border-gray-200">
+            <Input
+              placeholder="Filter customer..."
+              value={table.getColumn("partyName")?.getFilterValue() ?? ""} 
+              onChange={(event) =>
+                table.getColumn("partyName")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+          </div>
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
