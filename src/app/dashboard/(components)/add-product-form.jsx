@@ -1,35 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addProduct } from "@/store/productsSlice";
+import { selectUserRole } from "@/store/authSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
-import { useSelector } from "react-redux";
-import { selectUserRole } from "@/store/authSlice";
+import { addMonths, format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export function AddProductForm() {
   const dispatch = useDispatch();
+  const userRole = useSelector(selectUserRole);
+
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  // const [description, setDescription] = useState("");
   const [packaging, setPackaging] = useState("");
   const [rate, setRate] = useState("");
   const [mrp, setMrp] = useState("");
   const [openingStock, setOpeningStock] = useState("");
   const [minimumStockThreshold, setMinimumStockThreshold] = useState("12");
+  const [mfgDate, setMfgDate] = useState(undefined);
+  const [monthsUpToExpiry, setMonthsUpToExpiry] = useState("3");
+  const [expDate, setExpDate] = useState(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const userRole = useSelector(selectUserRole);
+
+  useEffect(() => {
+    if (!expDate && mfgDate && monthsUpToExpiry) {
+      const calculatedExpDate = addMonths(
+        mfgDate,
+        parseInt(monthsUpToExpiry, 10)
+      );
+      setExpDate(calculatedExpDate);
+    }
+  }, [mfgDate, monthsUpToExpiry]);
 
   const validateForm = () => {
     const errors = {};
     if (!name.trim()) errors.name = "Product name is required";
     if (!packaging.trim()) errors.packaging = "Packaging is required";
+    // if (!mfgDate.trim()) errors.mfgDate = "Manufacturing Date is required";
+    // if (!monthsUpToExpiry.trim()) errors.monthsUpToExpiry = "Months is required";
+    if (!expDate || isNaN(expDate.getTime()))
+      errors.expDate = "Expiry Date is required";
     if (!rate.trim() || parseFloat(rate) <= 0)
       errors.rate = "Valid rate is required";
     if (!mrp || parseFloat(mrp) <= 0) errors.mrp = "Valid MRP is required";
@@ -61,7 +84,9 @@ export function AddProductForm() {
       await dispatch(
         addProduct({
           name,
-          description,
+          // description,
+          mfgDate,
+          expDate,
           packaging,
           mrp: parseFloat(mrp),
           rate: rate ? parseFloat(rate) : 0,
@@ -75,8 +100,11 @@ export function AddProductForm() {
 
       // Reset form
       setName("");
-      setDescription("");
+      // setDescription("");
       setPackaging("");
+      setMfgDate(null);
+      setExpDate(null);
+      setMonthsUpToExpiry("");
       setMrp("");
       setRate("");
       setOpeningStock("");
@@ -90,7 +118,6 @@ export function AddProductForm() {
       setIsSubmitting(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -118,16 +145,81 @@ export function AddProductForm() {
           <p className="text-sm text-destructive">{fieldErrors.name}</p>
         )}
       </div>
-      {/* Description and Packaging */}
-      <div className="grid grid-cols-2 gap-4">
+
+      {/* Manufacturing Date, Months Upto Expiry, Expiry Date and Packaging */}
+      <div className="grid grid-cols-4 gap-4">
+        {/* Manufacturing Date */}
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
+          <Label htmlFor="mfgDate">Mfg. Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !mfgDate && "text-muted-foreground"
+                )}
+              >
+                {mfgDate ? format(mfgDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={mfgDate}
+                onSelect={(date) => {
+                  setMfgDate(date);
+                }}
+                disabled={(date) => date > new Date()} // Prevent future dates from being selected
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Months Upto Expiry */}
+        <div className="space-y-2">
+          <Label htmlFor="monthsUpToExpiry">Expiry (Months)</Label>
+          <Input
+            id="monthsUpToExpiry"
+            type="number"
+            value={monthsUpToExpiry}
+            onChange={(e) => setMonthsUpToExpiry(e.target.value)}
           />
+        </div>
+
+        {/* Expiry Date */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="expDate"
+            className={fieldErrors.expDate ? "text-destructive" : ""}
+          >
+            Exp. Date
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !expDate && "text-muted-foreground"
+                )}
+              >
+                {expDate ? format(expDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={expDate}
+                onSelect={setExpDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {fieldErrors.expDate && (
+            <p className="text-sm text-destructive">{fieldErrors.expDate}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="packaging">Packaging</Label>
@@ -138,7 +230,8 @@ export function AddProductForm() {
           />
         </div>
       </div>
-      {/* MRP, Rate, Stock Quantity, Minimum Stock Threshold */}
+
+      {/* MRP, Net Rate, Stock Quantity, Minimum Stock Threshold */}
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label
@@ -165,7 +258,7 @@ export function AddProductForm() {
             htmlFor="rate"
             className={fieldErrors.rate ? "text-destructive" : ""}
           >
-            Sell Rate
+            Net Sell Rate
           </Label>
           <Input
             id="rate"
@@ -188,7 +281,7 @@ export function AddProductForm() {
             Opening Stock
           </Label>
           <Input
-            htmlFor="openingStock"
+            id="openingStock"
             type="number"
             value={openingStock}
             onChange={(e) => setOpeningStock(e.target.value)}
@@ -239,6 +332,12 @@ export function AddProductForm() {
           "Add Product"
         )}
       </Button>
+      {userRole !== "admin" && (
+        <p className="text-sm text-destructive mt-2">
+          You do not have permission to add products. Please contact an
+          administrator.
+        </p>
+      )}
     </form>
   );
 }

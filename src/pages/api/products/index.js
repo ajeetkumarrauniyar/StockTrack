@@ -35,14 +35,34 @@ export default async function handler(req, res) {
       break;
     case "POST":
       try {
-        const { openingStock, stockQuantity, packaging, ...productData } = req.body;
+        const {
+          openingStock,
+          stockQuantity,
+          packaging,
+          mfgDate,
+          expDate,
+          monthsUpToExpiry,
+          ...productData
+        } = req.body;
+
+        let calculatedExpDate = expDate;
+
+        // If expiry date is not provided, calculate it from mfg date and months up to expiry
+        if (!expDate && mfgDate && monthsUpToExpiry) {
+          calculatedExpDate = addMonths(
+            new Date(mfgDate),
+            parseInt(monthsUpToExpiry, 10)
+          );
+        }
         const product = await Product.create({
           ...productData,
           openingStock: openingStock || 0, // Use openingStock from request body
           stockQuantity: openingStock || 0, // Initialize stockQuantity to openingStock
-          packaging: packaging || 0,
+          packaging: packaging || "",
+          mfgDate: mfgDate ? new Date(mfgDate) : undefined,
+          expDate: calculatedExpDate ? new Date(calculatedExpDate) : undefined,
         });
-        
+
         res.status(201).json({ success: true, data: product });
       } catch (error) {
         res

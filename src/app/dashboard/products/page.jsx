@@ -41,6 +41,21 @@ export default function ProductsPage() {
     return `₹${Number(value).toFixed(2)}`;
   };
 
+  // Format Date
+  const formatDate = (date) => {
+    if (date === undefined || date === null) return "N/A";
+
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return "Invalid Date";
+
+   // Get day, month, and year
+   const day = String(parsedDate.getDate()).padStart(2, '0');  // Add leading zero if needed
+   const month = String(parsedDate.getMonth() + 1).padStart(2, '0');  // Month is 0-indexed, so add 1
+   const year = parsedDate.getFullYear();
+   
+   return `${day}-${month}-${year}`;
+  };
+
   if (status === "loading") {
     return (
       <div className="flex justify-center items-center h-64">
@@ -70,9 +85,11 @@ export default function ProductsPage() {
             <TableHead>Packaging</TableHead>
             <TableHead>MRP</TableHead>
             <TableHead>Net Sell Rate</TableHead>
-            <TableHead>Opening Stock</TableHead> 
+            <TableHead>Opening Stock</TableHead>
             <TableHead>Stock Quantity</TableHead>
             <TableHead>Minimum Stock Threshold</TableHead>
+            <TableHead>Mfg. Date</TableHead>
+            <TableHead>Expiry Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -92,6 +109,8 @@ export default function ProductsPage() {
               <TableCell>{product.openingStock || "N/A"}</TableCell>
               <TableCell>{product.stockQuantity ?? "N/A"}</TableCell>
               <TableCell>{product.minimumStockThreshold ?? "N/A"}</TableCell>
+              <TableCell>{formatDate(product.mfgDate)}</TableCell>
+              <TableCell>{formatDate(product.expDate)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

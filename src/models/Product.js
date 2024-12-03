@@ -7,13 +7,13 @@ const ProductSchema = new mongoose.Schema(
       required: true,
     },
     description: String,
-    packaging:{
+    packaging: {
       type: String,
       required: true,
     },
     unit: {
       type: String,
-      default: 'Pcs'
+      default: "Pcs",
     },
     rate: {
       type: Number,
@@ -36,6 +36,12 @@ const ProductSchema = new mongoose.Schema(
     minimumStockThreshold: {
       type: Number,
       default: 12, // Default threshold
+    },
+    mfgDate: {
+      type: Date,
+    },
+    expDate: {
+      type: Date,
     },
   },
   {
