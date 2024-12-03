@@ -35,13 +35,14 @@ export default async function handler(req, res) {
       break;
     case "POST":
       try {
-        const { openingStock, stockQuantity, ...productData } = req.body;
+        const { openingStock, stockQuantity, packaging, ...productData } = req.body;
         const product = await Product.create({
           ...productData,
           openingStock: openingStock || 0, // Use openingStock from request body
           stockQuantity: openingStock || 0, // Initialize stockQuantity to openingStock
+          packaging: packaging || 0,
         });
-
+        
         res.status(201).json({ success: true, data: product });
       } catch (error) {
         res

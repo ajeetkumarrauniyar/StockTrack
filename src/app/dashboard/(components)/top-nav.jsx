@@ -25,14 +25,6 @@ export function TopNav() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const userRole = useSelector(selectUserRole);
 
-  // Debugging logs
-  // console.log("TopNav - Prop UserRole:", userRole);
-
-  // Use the userRole prop directly, falling back to "viewer" if it's undefined
-  // const role = userRole || "viewer";
-
-  // console.log("TopNav - Computed Role:", role);
-
   const pathname = usePathname();
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
