@@ -293,18 +293,6 @@ export function TransactionForm({ type }) {
 
   const totals = calculateTotals();
 
-  if (userRole !== "admin") {
-    return (
-      <Alert>
-        <AlertTitle>Permission Denied</AlertTitle>
-        <AlertDescription>
-          You do not have permission to perform transactions. Please contact an
-          administrator. Your role: <strong>{userRole}</strong>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -548,7 +536,7 @@ export function TransactionForm({ type }) {
           <Button type="button" onClick={addTransactionItem} variant="outline">
             <Plus className="mr-2 h-4 w-4" /> Add Product
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || userRole !== "admin"}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -559,6 +547,12 @@ export function TransactionForm({ type }) {
             )}
           </Button>
         </div>
+        {userRole !== "admin" && (
+          <p className="text-sm text-destructive mt-2">
+            You do not have permission to add products. Please contact an
+            administrator.
+          </p>
+        )}
       </form>
 
       <Dialog
