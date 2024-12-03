@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectUserRole } from "@/store/authSlice";
 import { Badge } from "@/components/ui/badge";
+import ManualStockCheck from "./manual-stock-check";
 
 export function TopNav() {
   const { user } = useUser();
@@ -52,6 +53,7 @@ export function TopNav() {
       <h1 className="text-2xl font-semibold">{pageTitle}</h1>
       <div className="flex items-center space-x-4">
         <p className="text-xs leading-none text-muted-foreground flex items-center">
+          {userRole === "admin" ? <ManualStockCheck /> : null}
           {userRole === "admin" ? (
             <>
               <ShieldCheck className="w-6 h-6 mr-1 text-green-500" />

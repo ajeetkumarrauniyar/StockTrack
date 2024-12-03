@@ -1,29 +1,41 @@
 import cron from "node-cron";
-import fetch from "node-fetch";
-import { BASE_URL } from "../config";
+import { checkLowStockAndSendAlerts } from "../utils/stockCheckUtil.js";
 
 // Schedule the task to run every day at 8 AM
 cron.schedule("0 8 * * *", async () => {
   console.log("Running daily stock check at", new Date().toLocaleString());
   try {
-    const response = await fetch(`${BASE_URL}/api/check-low-stock`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const result = await checkLowStockAndSendAlerts();
+
+    console.log("Daily stock check completed:", {
+      alertsSent: result.alertsSent,
+      productsCount: result.productsCount,
+      urgencyBreakdown: result.urgencyBreakdown,
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        `API request failed: ${errorData.error || response.statusText}`
-      );
-    }
-
-    const result = await response.json();
-    console.log("Daily stock check completed:", result);
   } catch (error) {
-    console.error("Error in daily stock check:", error);
+    console.error("Critical error in daily stock check:", error);
+
+    // Optional: Send an error notification email
+    try {
+      await sendEmail({
+        subject: "Daily Stock Check Failed",
+        content: {
+          text: `Daily stock check failed with error: ${error.message}`,
+          html: `
+            <html>
+              <body>
+                <h2>Inventory Management System Alert</h2>
+                <p>The daily stock check scheduled task encountered an error:</p>
+                <pre>${error.message}</pre>
+                <p>Please investigate the issue immediately.</p>
+              </body>
+            </html>
+          `,
+        },
+      });
+    } catch (emailError) {
+      console.error("Failed to send error notification email:", emailError);
+    }
   }
 });
 
