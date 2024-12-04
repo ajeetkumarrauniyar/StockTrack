@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 export function AddProductForm() {
   const dispatch = useDispatch();
@@ -43,7 +44,7 @@ export function AddProductForm() {
       );
       setExpDate(calculatedExpDate);
     }
-  }, [mfgDate, monthsUpToExpiry]);
+  }, [mfgDate, monthsUpToExpiry, expDate]);
 
   const validateForm = () => {
     const errors = {};
