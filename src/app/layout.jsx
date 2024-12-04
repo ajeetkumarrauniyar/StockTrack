@@ -7,6 +7,7 @@ import "../globals.css";
 import { clerkConfig } from "../../clerk";
 import { Loader } from "@/components/loader";
 import { selectUserRole, setUserRole } from "@/store/authSlice";
+import { Analytics } from "@vercel/analytics/react"
 
 function AuthWrapper({ children }) {
   const { user, isLoaded } = useUser();
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
         <html lang="en">
           <body>
             <ReduxProvider>{children}</ReduxProvider>
+            <Analytics />
           </body>
         </html>
       </Provider>
