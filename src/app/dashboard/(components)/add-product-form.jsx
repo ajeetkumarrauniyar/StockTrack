@@ -84,7 +84,7 @@ export function AddProductForm() {
 
       await dispatch(
         addProduct({
-          name,
+          name: name.trim().toUpperCase(),
           // description,
           mfgDate,
           expDate,
