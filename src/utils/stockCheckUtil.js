@@ -1,6 +1,9 @@
 "use server";
 
-import { generateEmailContent } from "@/emails/stock-alert-template";
+import {
+  generateEmailContent,
+  generateTabularEmailContent,
+} from "@/emails/stock-alert-template";
 import dbConnect from "@/lib/dbConnect";
 import Product from "@/models/Product";
 import { sendEmail } from "@/service/emailService";
@@ -40,7 +43,7 @@ function groupByUrgency(alerts) {
   }, {});
 }
 
-export async function checkLowStockAndSendAlerts() {
+export async function checkLowStockAndSendAlerts(useTabularFormat = false) {
   try {
     await dbConnect();
 
@@ -54,7 +57,9 @@ export async function checkLowStockAndSendAlerts() {
         formatStockMessage(product)
       );
 
-      const emailContent = generateEmailContent(productAlerts);
+      const emailContent = useTabularFormat
+        ? generateTabularEmailContent(productAlerts)
+        : generateEmailContent(productAlerts);
 
       await sendEmail({
         subject: `Stock Alert: ${lowStockProducts.length} Products Need Attention`,
@@ -71,6 +76,7 @@ export async function checkLowStockAndSendAlerts() {
           {}
         ),
         productDetails: productAlerts, // Include detailed product information
+        emailFormat: useTabularFormat ? "tabular" : "detailed",
       };
     }
 
@@ -79,6 +85,7 @@ export async function checkLowStockAndSendAlerts() {
       productsCount: 0,
       urgencyBreakdown: {},
       productDetails: [],
+      emailFormat: useTabularFormat ? "tabular" : "detailed",
     };
   } catch (error) {
     console.error("Error in stock alert system:", error);
@@ -86,7 +93,7 @@ export async function checkLowStockAndSendAlerts() {
   }
 }
 
-// Optional: Add a function to manually trigger stock check
-export async function manualStockCheck() {
-  return checkLowStockAndSendAlerts();
+// Optional: Manually trigger stock check with format option
+export async function manualStockCheck(useTabularFormat = false) {
+  return checkLowStockAndSendAlerts(useTabularFormat);
 }

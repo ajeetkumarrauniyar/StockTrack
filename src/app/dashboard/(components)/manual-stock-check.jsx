@@ -20,7 +20,7 @@ export default function ManualStockCheck() {
   const handleStockCheck = async () => {
     setIsLoading(true);
     try {
-      const result = await manualStockCheck();
+      const result = await manualStockCheck(true); // true for tabular format, false or omit for detailed format
 
       if (result.alertsSent) {
         toast({
