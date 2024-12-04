@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "@/store/productsSlice";
 import { AddProductForm } from "@/app/dashboard/(components)/add-product-form";
@@ -34,6 +34,11 @@ export default function ProductsPage() {
   const handlePageChange = (page) => {
     dispatch(fetchProducts({ page, limit }));
   };
+
+  // Sort products alphabetically by name
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
 
   // Format currency with error handling
   const formatCurrency = (value) => {
@@ -93,7 +98,7 @@ export default function ProductsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
+          {sortedProducts.map((product) => (
             <TableRow
               key={product._id}
               className={
