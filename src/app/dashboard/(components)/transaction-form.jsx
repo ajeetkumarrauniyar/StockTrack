@@ -10,13 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -42,10 +35,35 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 export function TransactionForm({ type }) {
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.items);
+  const [localProducts, setLocalProducts] = useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const productsState = useSelector((state) => {
+    console.log('[TransactionForm] Redux Products State:', {
+      state: state?.products,
+      items: state?.products?.items,
+      status: state?.products?.status
+    });
+    return state?.products;
+  });
+
+  // Debug log for component render
+  console.log('[TransactionForm] Component Render:', {
+    localProducts,
+    isLoadingProducts,
+    productsState
+  });
+
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [partyName, setPartyName] = useState(type === "sale" ? "CASH" : "");
   const [billDate, setBillDate] = useState(new Date());
@@ -83,6 +101,19 @@ export function TransactionForm({ type }) {
   }, [type]);
 
   useEffect(() => {
+    console.log('[TransactionForm] Products State Effect:', {
+      hasItems: !!productsState?.items,
+      itemsLength: productsState?.items?.length,
+      items: productsState?.items
+    });
+    if (productsState?.items) {
+      setLocalProducts(productsState.items);
+      setIsLoadingProducts(false);
+    }
+  }, [productsState?.items]);
+
+  useEffect(() => {
+    console.log('[TransactionForm] Initial Load Effect - Fetching Products');
     dispatch(fetchProducts({ page: 1, limit: 100 }));
     generateInvoiceNumber();
   }, [dispatch, type, generateInvoiceNumber]);
@@ -162,7 +193,7 @@ export function TransactionForm({ type }) {
   };
 
   const handleProductChange = (index, productId) => {
-    const product = products.find((p) => p._id === productId);
+    const product = localProducts.find((p) => p._id === productId);
     if (!product) return; // Exit if product not found
 
     const updatedItems = [...transactionItems];
@@ -401,29 +432,66 @@ export function TransactionForm({ type }) {
                 key={index}
                 className={fieldErrors.items?.[index] ? "bg-destructive/5" : ""}
               >
-                {/* Select a Product */}
+                {/* Product Selection Combobox */}
                 <TableCell>
-                  <Select
-                    value={item.product}
-                    onValueChange={(value) => handleProductChange(index, value)}
-                  >
-                    <SelectTrigger
-                      className={
-                        fieldErrors.items?.[index]?.product
-                          ? "border-destructive"
-                          : ""
-                      }
-                    >
-                      <SelectValue placeholder="Select a product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product._id} value={product._id}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !item.product && "text-muted-foreground",
+                          fieldErrors.items?.[index]?.product &&
+                            "border-destructive"
+                        )}
+                      >
+                        {item.product
+                          ? localProducts.find(
+                              (product) => product._id === item.product
+                            )?.name
+                          : "Select product..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search product..." />
+                        <CommandEmpty>No product found.</CommandEmpty>
+                        <CommandGroup>
+                          {isLoadingProducts ? (
+                            <CommandItem disabled>
+                              Loading products...
+                            </CommandItem>
+                          ) : localProducts.length > 0 ? (
+                            localProducts.map((product) => (
+                              <CommandItem
+                                key={product?._id}
+                                value={product?._id}
+                                onSelect={() =>
+                                  handleProductChange(index, product._id)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    item.product === product._id
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {product?.name || 'Unnamed Product'}
+                              </CommandItem>
+                            ))
+                          ) : (
+                            <CommandItem disabled>
+                              No products available
+                            </CommandItem>
+                          )}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {fieldErrors.items?.[index]?.product && (
                     <p className="text-sm text-destructive mt-1">
                       {fieldErrors.items[index].product}

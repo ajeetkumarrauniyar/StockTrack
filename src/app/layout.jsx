@@ -7,7 +7,7 @@ import "../globals.css";
 import { clerkConfig } from "../../clerk";
 import { Loader } from "@/components/loader";
 import { selectUserRole, setUserRole } from "@/store/authSlice";
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from "@vercel/analytics/react";
 
 function AuthWrapper({ children }) {
   const { user, isLoaded } = useUser();
@@ -37,21 +37,13 @@ function AuthWrapper({ children }) {
   });
 }
 
-function ReduxProvider({ children }) {
-  return (
-    <Provider store={store}>
-      <AuthWrapper>{children}</AuthWrapper>
-    </Provider>
-  );
-}
-
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider {...clerkConfig}>
       <Provider store={store}>
         <html lang="en">
           <body>
-            <ReduxProvider>{children}</ReduxProvider>
+            <AuthWrapper>{children}</AuthWrapper>
             <Analytics />
           </body>
         </html>
