@@ -12,7 +12,9 @@ if (!process.env.RESEND_API_KEY) {
 
 // Default configuration
 const CONFIG = {
-  defaultFrom: "Asha Ent Inventory <onboarding@resend.dev>",
+  defaultFrom:
+    "Asha Ent Inventory <notifications@asha-ekumeed.com>" ||
+    "Asha Ent Inventory <onboarding@resend.dev>",
   defaultRecipients: ["ashaentjun@gmail.com", "nrauniyar2001@gmail.com"],
 };
 
@@ -87,7 +89,6 @@ export async function sendEmail({
 
     // Send email
     const result = await resend.emails.send(emailData);
-
 
     return {
       success: true,
