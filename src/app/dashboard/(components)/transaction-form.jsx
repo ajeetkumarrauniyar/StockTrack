@@ -10,13 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -42,6 +35,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 export function TransactionForm({ type }) {
   const dispatch = useDispatch();
@@ -58,6 +59,7 @@ export function TransactionForm({ type }) {
   const [showSkippedNumberDialog, setShowSkippedNumberDialog] = useState(false);
   const [skippedNumberInfo, setSkippedNumberInfo] = useState(null);
   const userRole = useSelector(selectUserRole);
+  const isLoadingProducts = useSelector((state) => state.products.isLoading);
 
   const generateInvoiceNumber = useCallback(async () => {
     try {
@@ -403,27 +405,61 @@ export function TransactionForm({ type }) {
               >
                 {/* Select a Product */}
                 <TableCell>
-                  <Select
-                    value={item.product}
-                    onValueChange={(value) => handleProductChange(index, value)}
-                  >
-                    <SelectTrigger
-                      className={
-                        fieldErrors.items?.[index]?.product
-                          ? "border-destructive"
-                          : ""
-                      }
-                    >
-                      <SelectValue placeholder="Select a product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product._id} value={product._id}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !item.product && "text-muted-foreground",
+                          fieldErrors.items?.[index]?.product &&
+                            "border-destructive"
+                        )}
+                      >
+                        {item.product
+                          ? products.find(
+                              (product) => product._id === item.product
+                            )?.name
+                          : "Select a Product"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search product..." />
+                        <CommandEmpty>No product found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandList>
+                            {isLoadingProducts ? (
+                              <CommandEmpty>Loading products...</CommandEmpty>
+                            ) : products.length > 0 ? (
+                              products.map((product) => (
+                                <CommandItem
+                                  key={product._id}
+                                  onSelect={() =>
+                                    handleProductChange(index, product._id)
+                                  }
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      item.product === product._id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {product.name}
+                                </CommandItem>
+                              ))
+                            ) : (
+                              <CommandEmpty>No product found.</CommandEmpty>
+                            )}
+                          </CommandList>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {fieldErrors.items?.[index]?.product && (
                     <p className="text-sm text-destructive mt-1">
                       {fieldErrors.items[index].product}
