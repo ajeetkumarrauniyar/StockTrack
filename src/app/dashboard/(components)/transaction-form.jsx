@@ -46,24 +46,7 @@ import {
 
 export function TransactionForm({ type }) {
   const dispatch = useDispatch();
-  const [localProducts, setLocalProducts] = useState([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const productsState = useSelector((state) => {
-    console.log('[TransactionForm] Redux Products State:', {
-      state: state?.products,
-      items: state?.products?.items,
-      status: state?.products?.status
-    });
-    return state?.products;
-  });
-
-  // Debug log for component render
-  console.log('[TransactionForm] Component Render:', {
-    localProducts,
-    isLoadingProducts,
-    productsState
-  });
-
+  const products = useSelector((state) => state.products.items);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [partyName, setPartyName] = useState(type === "sale" ? "CASH" : "");
   const [billDate, setBillDate] = useState(new Date());
@@ -76,6 +59,7 @@ export function TransactionForm({ type }) {
   const [showSkippedNumberDialog, setShowSkippedNumberDialog] = useState(false);
   const [skippedNumberInfo, setSkippedNumberInfo] = useState(null);
   const userRole = useSelector(selectUserRole);
+  const isLoadingProducts = useSelector((state) => state.products.isLoading);
 
   const generateInvoiceNumber = useCallback(async () => {
     try {
@@ -101,19 +85,6 @@ export function TransactionForm({ type }) {
   }, [type]);
 
   useEffect(() => {
-    console.log('[TransactionForm] Products State Effect:', {
-      hasItems: !!productsState?.items,
-      itemsLength: productsState?.items?.length,
-      items: productsState?.items
-    });
-    if (productsState?.items) {
-      setLocalProducts(productsState.items);
-      setIsLoadingProducts(false);
-    }
-  }, [productsState?.items]);
-
-  useEffect(() => {
-    console.log('[TransactionForm] Initial Load Effect - Fetching Products');
     dispatch(fetchProducts({ page: 1, limit: 100 }));
     generateInvoiceNumber();
   }, [dispatch, type, generateInvoiceNumber]);
@@ -193,7 +164,7 @@ export function TransactionForm({ type }) {
   };
 
   const handleProductChange = (index, productId) => {
-    const product = localProducts.find((p) => p._id === productId);
+    const product = products.find((p) => p._id === productId);
     if (!product) return; // Exit if product not found
 
     const updatedItems = [...transactionItems];
@@ -432,7 +403,7 @@ export function TransactionForm({ type }) {
                 key={index}
                 className={fieldErrors.items?.[index] ? "bg-destructive/5" : ""}
               >
-                {/* Product Selection Combobox */}
+                {/* Select a Product */}
                 <TableCell>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -447,10 +418,10 @@ export function TransactionForm({ type }) {
                         )}
                       >
                         {item.product
-                          ? localProducts.find(
+                          ? products.find(
                               (product) => product._id === item.product
                             )?.name
-                          : "Select product..."}
+                          : "Select a Product"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -459,35 +430,32 @@ export function TransactionForm({ type }) {
                         <CommandInput placeholder="Search product..." />
                         <CommandEmpty>No product found.</CommandEmpty>
                         <CommandGroup>
-                          {isLoadingProducts ? (
-                            <CommandItem disabled>
-                              Loading products...
-                            </CommandItem>
-                          ) : localProducts.length > 0 ? (
-                            localProducts.map((product) => (
-                              <CommandItem
-                                key={product?._id}
-                                value={product?._id}
-                                onSelect={() =>
-                                  handleProductChange(index, product._id)
-                                }
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    item.product === product._id
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {product?.name || 'Unnamed Product'}
-                              </CommandItem>
-                            ))
-                          ) : (
-                            <CommandItem disabled>
-                              No products available
-                            </CommandItem>
-                          )}
+                          <CommandList>
+                            {isLoadingProducts ? (
+                              <CommandEmpty>Loading products...</CommandEmpty>
+                            ) : products.length > 0 ? (
+                              products.map((product) => (
+                                <CommandItem
+                                  key={product._id}
+                                  onSelect={() =>
+                                    handleProductChange(index, product._id)
+                                  }
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      item.product === product._id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {product.name}
+                                </CommandItem>
+                              ))
+                            ) : (
+                              <CommandEmpty>No product found.</CommandEmpty>
+                            )}
+                          </CommandList>
                         </CommandGroup>
                       </Command>
                     </PopoverContent>
