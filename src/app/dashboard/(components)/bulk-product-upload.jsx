@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import React, { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { addMultipleProducts } from "@/store/productsSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Download } from "lucide-react";
-import { useSelector } from "react-redux";
 import { selectUserRole } from "@/store/authSlice";
 
 export function BulkProductUpload() {
@@ -17,14 +16,31 @@ export function BulkProductUpload() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const userRole = useSelector(selectUserRole);
+  const bulkUploadStatus = useSelector(
+    (state) => state.products.bulkUploadStatus
+  );
+  const bulkUploadError = useSelector(
+    (state) => state.products.bulkUploadError
+  );
 
-  const handleFileChange = (e) => {
+  useEffect(() => {
+    if (bulkUploadStatus === "succeeded") {
+      setSuccess(true);
+      setFile(null);
+    } else if (bulkUploadStatus === "failed") {
+      setError(
+        bulkUploadError || "Failed to upload products. Please try again."
+      );
+    }
+  }, [bulkUploadStatus, bulkUploadError]);
+
+  const handleFileChange = useCallback((e) => {
     setFile(e.target.files[0]);
     setError(null);
     setSuccess(false);
-  };
+  }, []);
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (!file) {
       setError("Please select a CSV file");
       return;
@@ -43,32 +59,28 @@ export function BulkProductUpload() {
         body: formData,
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        // Handle specific error messages
-        throw new Error(result.message || "Upload failed");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Upload failed");
       }
 
-      // Dispatch the products to Redux store
+      const result = await response.json();
       await dispatch(addMultipleProducts(result.products)).unwrap();
-
-      setSuccess(true);
-      // Optional: show number of products added
-      setSuccess(`Successfully added ${result.productsAdded} products`);
+      setSuccess(`Successfully added ${result.products.length} products`);
+      setFile(null);
     } catch (err) {
       console.error("Upload error:", err);
       setError(err.message || "Failed to upload products. Please try again.");
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [file, dispatch]);
 
-  const handleDownloadSampleCSV = () => {
+  const handleDownloadSampleCSV = useCallback(() => {
     const csvContent = `name,description,packaging,mrp,rate,stockQuantity,minimumStockThreshold
-                        Product A,Description for A,Box,100,90,50,10
-                        Product B,Description for B,Bottle,200,180,30,5
-                        Product C,Description for C,Pack,150,135,40,8`;
+Product A,Description for A,Box,100,90,50,10
+Product B,Description for B,Bottle,200,180,30,5
+Product C,Description for C,Pack,150,135,40,8`;
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -81,7 +93,13 @@ export function BulkProductUpload() {
       link.click();
       document.body.removeChild(link);
     }
-  };
+  }, []);
+
+  const isUploadDisabled =
+    !file ||
+    isUploading ||
+    bulkUploadStatus === "loading" ||
+    userRole !== "admin";
 
   return (
     <div className="space-y-4">
@@ -90,13 +108,11 @@ export function BulkProductUpload() {
           type="file"
           accept=".csv"
           onChange={handleFileChange}
-          disabled={userRole !== "admin"}
+          disabled={userRole !== "admin" || isUploading}
+          key={file ? file.name : "empty"}
         />
-        <Button
-          onClick={handleUpload}
-          disabled={!file || isUploading || userRole !== "admin"}
-        >
-          {isUploading ? (
+        <Button onClick={handleUpload} disabled={isUploadDisabled}>
+          {isUploading || bulkUploadStatus === "loading" ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Uploading...
