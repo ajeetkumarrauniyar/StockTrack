@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+// Async thunks
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async ({ page, limit }) => {
@@ -18,15 +19,11 @@ export const addProduct = createAsyncThunk(
     try {
       const response = await fetch("/api/products", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(product),
       });
       if (!response.ok) {
-        // throw new Error("Failed to add product");
-        const errorData = await response.json();
-        return rejectWithValue(errorData);
+        return rejectWithValue(await response.json());
       }
       const data = await response.json();
       return data.data;
@@ -42,18 +39,11 @@ export const updateProductStock = createAsyncThunk(
     try {
       const response = await fetch(`/api/products/${productId}/stock`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          stockChange,
-          transactionType, // 'PURCHASE', 'SALE', 'ADJUSTMENT'
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stockChange, transactionType }),
       });
-
       if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData);
+        return rejectWithValue(await response.json());
       }
       const data = await response.json();
       return data.data;
@@ -65,34 +55,40 @@ export const updateProductStock = createAsyncThunk(
 
 export const addMultipleProducts = createAsyncThunk(
   "products/addMultipleProducts",
-  async (products) => {
-    const response = await fetch("/api/products/bulk-product-upload", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ products }),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to add multiple products");
+  async (products, { rejectWithValue }) => {
+    try {
+      return products;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-    const data = await response.json();
-    return data.data;
   }
 );
 
+// Initial state
 const initialState = {
   items: [], // Each item should have both openingStock and stockQuantity
   status: "idle",
   error: null,
   totalPages: 1,
   currentPage: 1,
+  bulkUploadStatus: "idle",
+  bulkUploadError: null,
 };
 
+// Slice
 export const productsSlice = createSlice({
   name: "products",
   initialState,
-  reducers: {},
+  reducers: {
+    addProductManually: (state, action) => {
+      state.items.push(action.payload);
+    },
+    removeProduct: (state, action) => {
+      state.items = state.items.filter(
+        (product) => product.id !== action.payload
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchProducts.pending, (state) => {
@@ -119,10 +115,7 @@ export const productsSlice = createSlice({
           openingStock: action.payload.openingStock,
           stockQuantity: action.payload.stockQuantity,
         });
-        if (state.items.length > 10) {
-          // Assuming 10 items per page
-          state.items.pop();
-        }
+        if (state.items.length > 10) state.items.pop();
       })
       .addCase(addProduct.rejected, (state, action) => {
         state.status = "failed";
@@ -139,14 +132,24 @@ export const productsSlice = createSlice({
           };
         }
       })
+      .addCase(addMultipleProducts.pending, (state) => {
+        state.bulkUploadStatus = "loading";
+        state.bulkUploadError = null;
+      })
       .addCase(addMultipleProducts.fulfilled, (state, action) => {
-        state.items = [...action.payload, ...state.items];
-        if (state.items.length > 10) {
-          // Assuming 10 items per page
-          state.items = state.items.slice(0, 10);
-        }
+        state.bulkUploadStatus = "succeeded";
+        state.items = [...action.payload, ...state.items].slice(0, 10);
+        state.totalPages = Math.ceil(
+          (state.items.length + action.payload.length) / 10
+        );
+      })
+      .addCase(addMultipleProducts.rejected, (state, action) => {
+        state.bulkUploadStatus = "failed";
+        state.bulkUploadError =
+          action.payload?.error || "Failed to add multiple products";
       });
   },
 });
 
+export const { addProductManually, removeProduct } = productsSlice.actions;
 export default productsSlice.reducer;
