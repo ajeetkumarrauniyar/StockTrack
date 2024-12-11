@@ -8,6 +8,7 @@ import { clerkConfig } from "../../clerk";
 import { Loader } from "@/components/loader";
 import { selectUserRole, setUserRole } from "@/store/authSlice";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function AuthWrapper({ children }) {
   const { user, isLoaded } = useUser();
@@ -42,9 +43,16 @@ export default function RootLayout({ children }) {
     <ClerkProvider {...clerkConfig}>
       <Provider store={store}>
         <html lang="en">
+          <head>
+            <meta
+              name="google-adsense-account"
+              content="ca-pub-2502539753070035"
+            />
+          </head>
           <body>
             <AuthWrapper>{children}</AuthWrapper>
             <Analytics />
+            <SpeedInsights />
           </body>
         </html>
       </Provider>
